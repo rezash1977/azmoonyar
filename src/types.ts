@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: UserRole;
   grade?: string; // e.g. "دهم ریاضی", "یازدهم تجربی"
+  password?: string; // Added for secure authentication simulation
 }
 
 export type QuestionType = 'multiple_choice' | 'boolean' | 'descriptive';

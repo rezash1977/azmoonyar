@@ -1,11 +1,11 @@
 import { User, Exam, Submission, ActivityLog } from './types';
 
 export const INITIAL_USERS: User[] = [
-  { id: '1', name: 'علیرضا کریمی', email: 'admin@azmoon.com', role: 'admin' },
-  { id: '2', name: 'استاد مریم حسینی', email: 'hoseini@azmoon.com', role: 'teacher' },
-  { id: '3', name: 'امیررضا علوی', email: 'alavi@azmoon.com', role: 'student', grade: 'یازدهم تجربی' },
-  { id: '4', name: 'سارا رضایی', email: 'sara@azmoon.com', role: 'student', grade: 'دهم ریاضی' },
-  { id: '5', name: 'محمد امین محمدی', email: 'amin@azmoon.com', role: 'student', grade: 'یازدهم تجربی' },
+  { id: '1', name: 'علیرضا کریمی', email: 'admin@azmoon.com', role: 'admin', password: 'admin123' },
+  { id: '2', name: 'استاد مریم حسینی', email: 'hoseini@azmoon.com', role: 'teacher', password: 'teacher123' },
+  { id: '3', name: 'امیررضا علوی', email: 'alavi@azmoon.com', role: 'student', grade: 'یازدهم تجربی', password: 'student123' },
+  { id: '4', name: 'سارا رضایی', email: 'sara@azmoon.com', role: 'student', grade: 'دهم ریاضی', password: 'student123' },
+  { id: '5', name: 'محمد امین محمدی', email: 'amin@azmoon.com', role: 'student', grade: 'یازدهم تجربی', password: 'student123' },
 ];
 
 export const INITIAL_EXAMS: Exam[] = [

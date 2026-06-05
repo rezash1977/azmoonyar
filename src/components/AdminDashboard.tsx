@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, Shield, ShieldCheck, Mail, ToggleLeft, ToggleRight, 
   Settings, Server, Activity, UserPlus, Trash, ChevronLeft, 
-  Lock, Unlock, BookOpen, AlertCircle
+  Lock, Unlock, BookOpen, AlertCircle, Database, Copy, Check
 } from 'lucide-react';
 import { User, ActivityLog, UserRole } from '../types';
 
@@ -26,7 +26,8 @@ export default function AdminDashboard({
   onUpdateUserGrade,
   onDeleteUser
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'users' | 'logs' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'logs' | 'database' | 'settings'>('users');
+  const [copied, setCopied] = useState(false);
 
   // Add User Temporary State
   const [newUserName, setNewUserName] = useState('');
@@ -81,7 +82,7 @@ export default function AdminDashboard({
         </div>
 
         {/* Dash switchers */}
-        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0 flex-wrap gap-1 md:gap-0">
           <button
             onClick={() => setActiveTab('users')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
@@ -97,6 +98,14 @@ export default function AdminDashboard({
             }`}
           >
             <Activity className="w-3.5 h-3.5" /> گزارش وقایع (Logs)
+          </button>
+          <button
+            onClick={() => setActiveTab('database')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+              activeTab === 'database' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5" /> ساختار دیتابیس MySQL
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -401,6 +410,310 @@ export default function AdminDashboard({
                 <p className="leading-relaxed font-medium">
                   <strong>نکته ادمین:</strong> بهینه سازی همگام‌سازی MySQL با متد تعاملی لوکال برای این نسخه فعال است تا اطلاعات هر دیتابیس به خوبی حفظ شود. تغییرات اعمال شده روی کاربران به محض کلیک ذخیره شده و به طور پویا در تمام داشبوردها منعکس می‌شود.
                 </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* TAB 4: DATABASE SCHEMA & EXPORTER */}
+        {activeTab === 'database' && (
+          <motion.div
+            key="database_tab"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6 text-right"
+          >
+            {/* Visual ERD Diagram */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-6">
+              <div>
+                <h3 className="font-black text-slate-900 text-base flex items-center gap-2">
+                  <Database className="w-5 h-5 text-indigo-600" />
+                  <span>ساختار ارتباطی پایگاه داده MySQL پیاده‌سازی شده</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  سامانه بر پایه معماری ۵ جدول کلیدی طراحی شده است. روابط زیر چگونگی پیوند هویت‌ها، آزمون‌ها و پاسخنامه‌ها را با کلیدهای خارجی نمایش می‌دهد.
+                </p>
+              </div>
+
+              {/* Graphic cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                {/* User Table card */}
+                <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl relative overflow-hidden group hover:border-indigo-400 transition-colors">
+                  <span className="absolute top-0 left-0 text-[9px] bg-indigo-600 text-white font-mono px-2 py-0.5 rounded-br-lg font-bold">1. users</span>
+                  <div className="pt-3 space-y-2 text-xs">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="font-bold text-slate-800">id</span>
+                      <span className="text-[10px] text-indigo-600 font-mono">VARCHAR(50) [PK]</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>name</span>
+                      <span className="font-mono text-[9px]">VARCHAR(100)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>email</span>
+                      <span className="font-mono text-[9px] text-amber-600 font-bold">UNIQUE</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>role</span>
+                      <span className="font-mono text-[9px]">ENUM(...)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>password</span>
+                      <span className="font-mono text-[9px]">VARCHAR(255)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-350 text-[10px]">
+                      <span>grade</span>
+                      <span className="font-mono text-[9px]">VARCHAR(50) NULL</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Exams Table card */}
+                <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl relative overflow-hidden group hover:border-indigo-400 transition-colors">
+                  <span className="absolute top-0 left-0 text-[9px] bg-indigo-600 text-white font-mono px-2 py-0.5 rounded-br-lg font-bold">2. exams</span>
+                  <div className="pt-3 space-y-2 text-xs">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="font-bold text-slate-800">id</span>
+                      <span className="text-[10px] text-indigo-600 font-mono">VARCHAR(50) [PK]</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>title</span>
+                      <span className="font-mono text-[9px]">VARCHAR(200)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-550 text-[11px]">
+                      <span className="font-bold text-teal-600">creator_id</span>
+                      <span className="font-mono text-[9px] text-teal-600">{"[FK -> users.id]"}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>duration</span>
+                      <span className="font-mono text-[9px]">INT</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>total_points</span>
+                      <span className="font-mono text-[9px]">FLOAT</span>
+                    </div>
+                    <div className="flex justify-between text-slate-350 text-[10px]">
+                      <span>category</span>
+                      <span className="font-mono text-[9px]">VARCHAR(50)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Questions Table card */}
+                <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl relative overflow-hidden group hover:border-indigo-400 transition-colors">
+                  <span className="absolute top-0 left-0 text-[9px] bg-indigo-600 text-white font-mono px-2 py-0.5 rounded-br-lg font-bold">3. questions</span>
+                  <div className="pt-3 space-y-2 text-xs">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="font-bold text-slate-800">id</span>
+                      <span className="text-[10px] text-indigo-600 font-mono">VARCHAR(50) [PK]</span>
+                    </div>
+                    <div className="flex justify-between text-slate-550 text-[11px]">
+                      <span className="font-bold text-teal-600">exam_id</span>
+                      <span className="font-mono text-[9px] text-teal-600">{"[FK -> exams.id]"}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>type</span>
+                      <span className="font-mono text-[9px]">ENUM(...)</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>text</span>
+                      <span className="font-mono text-[9px]">TEXT</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>options</span>
+                      <span className="font-mono text-[9px] text-indigo-500">JSON</span>
+                    </div>
+                    <div className="flex justify-between text-slate-350 text-[10px]">
+                      <span>correct_answer</span>
+                      <span className="font-mono text-[9px]">VARCHAR(255)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submissions Table card */}
+                <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl relative overflow-hidden group hover:border-indigo-400 transition-colors">
+                  <span className="absolute top-0 left-0 text-[9px] bg-indigo-600 text-white font-mono px-2 py-0.5 rounded-br-lg font-bold">4. submissions</span>
+                  <div className="pt-3 space-y-2 text-xs">
+                    <div className="flex justify-between border-b pb-1">
+                      <span className="font-bold text-slate-800">id</span>
+                      <span className="text-[10px] text-indigo-600 font-mono">VARCHAR(50) [PK]</span>
+                    </div>
+                    <div className="flex justify-between text-slate-550 text-[11px]">
+                      <span className="font-bold text-teal-600">exam_id</span>
+                      <span className="font-mono text-[9px] text-teal-600">[FK]</span>
+                    </div>
+                    <div className="flex justify-between text-slate-550 text-[11px]">
+                      <span className="font-bold text-teal-600">student_id</span>
+                      <span className="font-mono text-[9px] text-teal-600">{"[FK -> users.id]"}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>answers</span>
+                      <span className="font-mono text-[9px] text-indigo-500">JSON</span>
+                    </div>
+                    <div className="flex justify-between text-slate-500 text-[11px]">
+                      <span>points_gained</span>
+                      <span className="font-mono text-[9px]">FLOAT</span>
+                    </div>
+                    <div className="flex justify-between text-slate-350 text-[10px]">
+                      <span>status</span>
+                      <span className="font-mono text-[9px]">ENUM('pending','graded')</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Informational connection description */}
+              <div className="p-4 bg-indigo-50/50 border border-indigo-150 text-indigo-950 rounded-2xl text-xs space-y-2 leading-relaxed">
+                <span className="font-bold text-indigo-900 block flex items-center gap-1">
+                  <Server className="w-4 h-4" />
+                  <span>دیتابیس در محیط لوکال و سرور اصلی سی‌پنل چگونه کار می‌کند؟</span>
+                </span>
+                <p>
+                  در حال حاضر جهت تست روان و سرعت بالا، اطلاعات کل سامانه درون حافظه بومی مرورگر شما (<code className="font-bold bg-white px-1.5 py-0.5 rounded border border-indigo-100 font-mono">localStorage</code>) پیاده‌سازی و همگام‌سازی می‌شود. اما برای دپلوی در <strong>سی‌پنل (cPanel)</strong> و راه‌اندازی با زبان‌های بک‌اندی مثل PHP یا Node.js، شما دقیقاً به جداول ساختاریافته MySQL بالا نیاز دارید. سیستم احراز هویت با انطباق مستقیم هش کلمه عبور وارد شده با این دیتابیس کار خواهد کرد.
+                </p>
+              </div>
+            </div>
+
+            {/* SQL Script Copier Card */}
+            <div className="bg-slate-900 text-slate-200 rounded-3xl p-6 border border-slate-800 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-black text-white text-sm flex items-center gap-1.5">
+                    <Server className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>کدهای راه‌اندازی پایگاه داده در MySQL (مخصوص ایمپورت به PhpMyAdmin)</span>
+                  </h4>
+                  <p className="text-[10px] text-slate-400 mt-0.5">کد زیر را کپی کرده و در تب SQL دیتابیس خود در سی‌پنل اجرا کنید.</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const sqlCode = `-- اسکریپت ساخت دیتابیس آزمون‌یار برای سی‌پنل (MySQL)
+
+-- 1. جدول کاربران
+CREATE TABLE IF NOT EXISTS \`users\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`name\` VARCHAR(100) NOT NULL,
+  \`email\` VARCHAR(100) NOT NULL UNIQUE,
+  \`role\` ENUM('admin', 'teacher', 'student') NOT NULL,
+  \`grade\` VARCHAR(50) DEFAULT NULL,
+  \`password\` VARCHAR(255) NOT NULL,
+  \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- 2. جدول آزمون‌ها
+CREATE TABLE IF NOT EXISTS \`exams\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`title\` VARCHAR(200) NOT NULL,
+  \`description\` TEXT,
+  \`creator_id\` VARCHAR(50) NOT NULL,
+  \`creator_name\` VARCHAR(100) NOT NULL,
+  \`duration\` INT NOT NULL,
+  \`passing_score\` FLOAT NOT NULL,
+  \`total_points\` FLOAT NOT NULL,
+  \`category\` VARCHAR(50) NOT NULL,
+  \`start_date\` DATETIME NOT NULL,
+  \`end_date\` DATETIME NOT NULL,
+  PRIMARY KEY (\`id\`),
+  FOREIGN KEY (\`creator_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- 3. جدول سوالات
+CREATE TABLE IF NOT EXISTS \`questions\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`exam_id\` VARCHAR(50) NOT NULL,
+  \`type\` ENUM('multiple_choice', 'boolean', 'descriptive') NOT NULL,
+  \`text\` TEXT NOT NULL,
+  \`options\` JSON DEFAULT NULL,
+  \`correct_answer\` VARCHAR(255) DEFAULT NULL,
+  \`points\` FLOAT NOT NULL,
+  PRIMARY KEY (\`id\`),
+  FOREIGN KEY (\`exam_id\`) REFERENCES \`exams\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- 4. جدول پاسخنامه‌ها
+CREATE TABLE IF NOT EXISTS \`submissions\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`exam_id\` VARCHAR(50) NOT NULL,
+  \`exam_title\` VARCHAR(200) NOT NULL,
+  \`student_id\` VARCHAR(50) NOT NULL,
+  \`student_name\` VARCHAR(100) NOT NULL,
+  \`answers\` JSON NOT NULL,
+  \`points_gained\` FLOAT DEFAULT NULL,
+  \`total_points\` FLOAT NOT NULL,
+  \`status\` ENUM('pending', 'graded') DEFAULT 'pending',
+  \`submitted_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  \`graded_at\` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (\`id\`),
+  FOREIGN KEY (\`exam_id\`) REFERENCES \`exams\` (\`id\`) ON DELETE CASCADE,
+  FOREIGN KEY (\`student_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- نمونه رکوردهای اولیه جهت ورود نمونه:
+INSERT INTO \`users\` (\`id\`, \`name\`, \`email\`, \`role\`, \`password\`) VALUES
+('1', 'علیرضا کریمی', 'admin@azmoon.com', 'admin', 'admin123'),
+('2', 'استاد مریم حسینی', 'hoseini@azmoon.com', 'teacher', 'teacher123');`;
+                    navigator.clipboard.writeText(sqlCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copied ? 'کد کپی شد!' : 'کپی اسکریپت SQL'}</span>
+                </button>
+              </div>
+
+              {/* Code display block */}
+              <div className="relative font-mono text-[11px] p-4 bg-slate-950 rounded-2xl overflow-x-auto max-h-[350px] border border-slate-800 text-left" dir="ltr text-indigo-200">
+                <pre className="text-emerald-400">
+                  {`-- اسکریپت ساخت دیتابیس آزمون‌یار برای سی‌پنل (MySQL)
+
+-- 1. جدول کاربران (users)
+CREATE TABLE IF NOT EXISTS \`users\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`name\` VARCHAR(100) NOT NULL,
+  \`email\` VARCHAR(100) NOT NULL UNIQUE,
+  \`role\` ENUM('admin', 'teacher', 'student') NOT NULL,
+  \`grade\` VARCHAR(50) DEFAULT NULL,
+  \`password\` VARCHAR(255) NOT NULL,
+  \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- 2. جدول آزمون‌ها (exams)
+CREATE TABLE IF NOT EXISTS \`exams\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`title\` VARCHAR(200) NOT NULL,
+  \`description\` TEXT,
+  \`creator_id\` VARCHAR(50) NOT NULL,
+  \`creator_name\` VARCHAR(100) NOT NULL,
+  \`duration\` INT NOT NULL,
+  \`passing_score\` FLOAT NOT NULL,
+  \`total_points\` FLOAT NOT NULL,
+  \`category\` VARCHAR(50) NOT NULL,
+  \`start_date\` DATETIME NOT NULL,
+  \`end_date\` DATETIME NOT NULL,
+  PRIMARY KEY (\`id\`),
+  FOREIGN KEY (\`creator_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;
+
+-- 3. جدول سوالات (questions)
+CREATE TABLE IF NOT EXISTS \`questions\` (
+  \`id\` VARCHAR(50) NOT NULL,
+  \`exam_id\` VARCHAR(50) NOT NULL,
+  \`type\` ENUM('multiple_choice', 'boolean', 'descriptive') NOT NULL,
+  \`text\` TEXT NOT NULL,
+  \`options\` JSON DEFAULT NULL,
+  \`correct_answer\` VARCHAR(255) DEFAULT NULL,
+  \`points\` FLOAT NOT NULL,
+  PRIMARY KEY (\`id\`),
+  FOREIGN KEY (\`exam_id\`) REFERENCES \`exams\` (\`id\`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_persian_ci;`}
+                </pre>
               </div>
             </div>
           </motion.div>

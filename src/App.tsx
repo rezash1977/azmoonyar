@@ -10,9 +10,11 @@ import { User, Exam, Submission, ActivityLog, UserRole } from './types';
 import StudentDashboard from './components/StudentDashboard';
 import TeacherDashboard from './components/TeacherDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import LoginPortal from './components/LoginPortal';
 import { 
   GraduationCap, ShieldAlert, Settings, Award, 
-  Users, UserCheck, BookOpen, AlertOctagon, HelpCircle 
+  Users, UserCheck, BookOpen, AlertOctagon, HelpCircle,
+  LogOut, Lock
 } from 'lucide-react';
 
 export default function App() {
@@ -37,10 +39,27 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_LOGS;
   });
 
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-    // Default to the Teacher user to showcase design on load
-    return users.find(u => u.role === 'teacher') || users[0];
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedSession = localStorage.getItem('azmoon_session');
+    if (savedSession) {
+      try {
+        return JSON.parse(savedSession);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null; // Start out logged out to prompt the gorgeous Login portal
   });
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('azmoon_session', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('azmoon_session');
+  };
 
   // Sync state to local storage when changed
   useEffect(() => {
@@ -73,11 +92,13 @@ export default function App() {
   };
 
   const handleAddExam = (newExam: Exam) => {
+    if (!currentUser) return;
     setExams(prev => [newExam, ...prev]);
     handleAddLog(`آزمون جدید با عنوان «${newExam.title}» تعریف نمود.`, currentUser);
   };
 
   const handleSubmitExam = (examId: string, answers: Record<string, string>) => {
+    if (!currentUser) return;
     const relatedExam = exams.find(e => e.id === examId);
     if (!relatedExam) return;
 
@@ -125,6 +146,7 @@ export default function App() {
     feedback: Record<string, string>, 
     gradedBy: string
   ) => {
+    if (!currentUser) return;
     setSubmissions(prev => prev.map(sub => {
       if (sub.id !== submissionId) return sub;
 
@@ -148,10 +170,24 @@ export default function App() {
   // User Actions
   const handleAddUser = (newUser: User) => {
     setUsers(prev => [...prev, newUser]);
-    handleAddLog(`کاربر جدید با نام «${newUser.name}» را ثبت‌نام کرد.`, currentUser);
+    if (currentUser) {
+      handleAddLog(`کاربر جدید با نام «${newUser.name}» را ثبت‌نام کرد.`, currentUser);
+    } else {
+      // Guest or standalone registration log
+      const registerLog: ActivityLog = {
+        id: `log_${Date.now()}`,
+        userId: newUser.id,
+        userName: newUser.name,
+        userRole: newUser.role,
+        action: `عضو جدید با موفقیت ثبت‌نام و وارد سیستم شد.`,
+        timestamp: new Date().toISOString()
+      };
+      setLogs(prev => [registerLog, ...prev]);
+    }
   };
 
   const handleUpdateUserRole = (userId: string, newRole: UserRole) => {
+    if (!currentUser) return;
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
     const targetUser = users.find(u => u.id === userId);
     if (targetUser) {
@@ -164,6 +200,7 @@ export default function App() {
   };
 
   const handleDeleteUser = (userId: string) => {
+    if (!currentUser) return;
     setUsers(prev => prev.filter(u => u.id !== userId));
     const targetUser = users.find(u => u.id === userId);
     if (targetUser) {
@@ -183,16 +220,16 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span>شبیه‌سازی ورود به عنوان:</span>
-            <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+            <span>شبیه‌سازی ورود سریع:</span>
+            <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 flex-wrap gap-0.5 sm:gap-0">
               {users.map((u) => {
-                const isSelected = currentUser.id === u.id;
+                const isSelected = currentUser && currentUser.id === u.id;
                 return (
                   <button
                     key={u.id}
                     id={`role_switch_btn_${u.id}`}
                     onClick={() => {
-                      setCurrentUser(u);
+                      handleLogin(u);
                     }}
                     className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                       isSelected 
@@ -227,15 +264,34 @@ export default function App() {
           </div>
 
           {/* Active user status display */}
-          <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm">
-              {currentUser.name.charAt(0)}
+          {currentUser ? (
+            <div className="flex items-center gap-3">
+              <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-sm select-none">
+                  {currentUser.name.charAt(0)}
+                </div>
+                <div className="text-xs">
+                  <span className="font-bold text-slate-800 block">{currentUser.name}</span>
+                  <span className="text-[10px] text-slate-400 block font-mono" dir="ltr">{currentUser.email}</span>
+                </div>
+              </div>
+
+              {/* Logout button */}
+              <button
+                onClick={handleLogout}
+                className="p-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-100 text-rose-600 rounded-2xl transition-all cursor-pointer flex items-center gap-1.5 font-bold text-xs shadow-xs"
+                title="خروج از حساب کاربری"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">خروج</span>
+              </button>
             </div>
-            <div className="text-xs">
-              <span className="font-bold text-slate-800 block">{currentUser.name}</span>
-              <span className="text-[10px] text-slate-400 block font-mono" dir="ltr">{currentUser.email}</span>
+          ) : (
+            <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-2xl flex items-center gap-2 text-xs text-slate-500 font-bold">
+              <Lock className="w-4 h-4 text-indigo-600" />
+              <span>وضعیت: خارج شده از سیستم</span>
             </div>
-          </div>
+          )}
 
         </div>
       </header>
@@ -243,56 +299,73 @@ export default function App() {
       {/* RENDER ACTIVE DASHBOARD CHASSIS */}
       <main className="flex-1 pb-16">
         <AnimatePresence mode="wait">
-          {currentUser.role === 'student' && (
+          {!currentUser ? (
             <motion.div
-              key="student"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              key="auth_portal"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
             >
-              <StudentDashboard 
-                currentUser={currentUser} 
-                exams={exams} 
-                submissions={submissions}
-                onSubmitExam={handleSubmitExam}
+              <LoginPortal 
+                users={users} 
+                onLogin={handleLogin} 
+                onRegister={handleAddUser} 
               />
             </motion.div>
-          )}
+          ) : (
+            <div key="dashboard_container">
+              {currentUser.role === 'student' && (
+                <motion.div
+                  key="student"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <StudentDashboard 
+                    currentUser={currentUser} 
+                    exams={exams} 
+                    submissions={submissions}
+                    onSubmitExam={handleSubmitExam}
+                  />
+                </motion.div>
+              )}
 
-          {currentUser.role === 'teacher' && (
-            <motion.div
-              key="teacher"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <TeacherDashboard 
-                currentUser={currentUser}
-                exams={exams}
-                submissions={submissions}
-                onAddExam={handleAddExam}
-                onGradeSubmission={handleGradeSubmission}
-              />
-            </motion.div>
-          )}
+              {currentUser.role === 'teacher' && (
+                <motion.div
+                  key="teacher"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <TeacherDashboard 
+                    currentUser={currentUser}
+                    exams={exams}
+                    submissions={submissions}
+                    onAddExam={handleAddExam}
+                    onGradeSubmission={handleGradeSubmission}
+                  />
+                </motion.div>
+              )}
 
-          {currentUser.role === 'admin' && (
-            <motion.div
-              key="admin"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <AdminDashboard 
-                currentUser={currentUser}
-                users={users}
-                logs={logs}
-                onAddUser={handleAddUser}
-                onUpdateUserRole={handleUpdateUserRole}
-                onUpdateUserGrade={handleUpdateUserGrade}
-                onDeleteUser={handleDeleteUser}
-              />
-            </motion.div>
+              {currentUser.role === 'admin' && (
+                <motion.div
+                  key="admin"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <AdminDashboard 
+                    currentUser={currentUser}
+                    users={users}
+                    logs={logs}
+                    onAddUser={handleAddUser}
+                    onUpdateUserRole={handleUpdateUserRole}
+                    onUpdateUserGrade={handleUpdateUserGrade}
+                    onDeleteUser={handleDeleteUser}
+                  />
+                </motion.div>
+              )}
+            </div>
           )}
         </AnimatePresence>
       </main>
