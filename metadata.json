@@ -1,0 +1,6 @@
+{
+  "name": "سامانه آزمون آنلاین",
+  "description": "یک پلتفرم کامل، مدرن و ریسپانسیو برای برگزاری آزمون‌های آنلاین با داشبورد مدیریت برای اساتید، معلمان و دانش‌آموزان.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
